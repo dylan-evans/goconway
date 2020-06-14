@@ -22,11 +22,11 @@ type Cell struct {
 func main() {
 	rowsPtr := flag.Uint64("rows", 100, "rows")
 	colsPtr := flag.Uint64("columns", 100, "columns")
+    flag.Parse()
 	mesh := NewMesh(*rowsPtr, *colsPtr)
-	mesh.SetValue(10, 10, 1)
+    fmt.Println("Adding chaos")
 	mesh.Chaos()
-	mesh.Swap()
-	fmt.Println("Starting")
+	fmt.Println("Starting", mesh.Rows, "rows", mesh.Columns, "columns")
 	for i := 0; ; i++ {
 		stat := mesh.Update()
 		mesh.Swap()

@@ -10,19 +10,28 @@ type Mesh struct {
 }
 
 func NewMesh(rows, columns uint64) Mesh {
-	return Mesh{Rows: rows,
+	mesh := Mesh{Rows: rows,
 		Columns: columns,
-		current: make([]Cell, rows*columns, rows*columns),
-		staging: make([]Cell, rows*columns, rows*columns),
-	}
+    }
+    mesh.current = make([]Cell, mesh.Size(), mesh.Size())
+	mesh.staging = make([]Cell, mesh.Size(), mesh.Size())
+    return mesh
+}
+
+func (mesh *Mesh) Size() uint64 {
+    return mesh.Rows * mesh.Columns
+}
+
+func (mesh *Mesh) getOffset(row, column uint64) uint64 {
+    return row * mesh.Columns + column
 }
 
 func (mesh *Mesh) GetValue(row, column uint64) uint8 {
-	return mesh.current[row*mesh.Columns+column].value
+	return mesh.current[mesh.getOffset(row, column)].value
 }
 
 func (mesh *Mesh) SetValue(row, column uint64, value uint8) {
-	mesh.staging[row*mesh.Columns+column].value = value
+	mesh.staging[mesh.getOffset(row, column)].value = value
 }
 
 func (mesh *Mesh) UpdateRow(row uint64) Stat {
@@ -35,6 +44,7 @@ func (mesh *Mesh) UpdateRow(row uint64) Stat {
 				stat.Changed++
 				stat.Dead++
 			} else {
+                mesh.SetValue(row, col, 1)
 				stat.Alive++
 			}
 		} else {
@@ -43,6 +53,7 @@ func (mesh *Mesh) UpdateRow(row uint64) Stat {
 				stat.Changed++
 				stat.Alive++
 			} else {
+                mesh.SetValue(row, col, 0);
 				stat.Dead++
 			}
 		}
@@ -86,6 +97,6 @@ func (mesh *Mesh) Counter(row uint64, column uint64) int {
 
 func (mesh *Mesh) Chaos() {
 	for i := uint64(0); i < mesh.Rows*mesh.Columns; i++ {
-		mesh.staging[i].value = uint8(rand.Uint64() & 2)
+		mesh.current[i].value = uint8(rand.Uint64() & 2)
 	}
 }
