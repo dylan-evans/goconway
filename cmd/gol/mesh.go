@@ -4,21 +4,23 @@ import (
 	"math/rand"
 )
 
+const BITS = 64
+
 type Cell struct {
 	value uint8
 }
 
 type Mesh struct {
 	Rows, Columns    uint64
-	current, staging []Cell
+	current, staging []uint64
 }
 
 func NewMesh(rows, columns uint64) Mesh {
 	mesh := Mesh{Rows: rows,
 		Columns: columns,
 	}
-	mesh.current = make([]Cell, mesh.Size(), mesh.Size())
-	mesh.staging = make([]Cell, mesh.Size(), mesh.Size())
+	mesh.current = make([]uint64, mesh.Size(), mesh.Size())
+	mesh.staging = make([]uint64, mesh.Size(), mesh.Size())
 	return mesh
 }
 
@@ -27,37 +29,48 @@ func (mesh *Mesh) Size() uint64 {
 }
 
 func (mesh *Mesh) getOffset(row, column uint64) uint64 {
-	return row*mesh.Columns + column
+	return (row*mesh.Columns + column) / BITS
 }
 
-func (mesh *Mesh) GetValue(row, column uint64) uint8 {
-	return mesh.current[mesh.getOffset(row, column)].value
+func (mesh *Mesh) getMask(row, column uint64) (uint64, uint64) {
+    offset := row*mesh.Columns + column
+    return offset / BITS, offset % BITS
 }
 
-func (mesh *Mesh) SetValue(row, column uint64, value uint8) {
-	mesh.staging[mesh.getOffset(row, column)].value = value
+func (mesh *Mesh) GetValue(row, column uint64) bool {
+    offset, mask := mesh.getMask(row, column)
+    return bool(mesh.current[offset] & mask > 0)
+}
+
+func (mesh *Mesh) SetValue(row, column uint64, value bool) {
+    offset, mask := mesh.getMask(row, column)
+    if value {
+        mesh.staging[offset] |= (1 << mask)
+    } else {
+        mesh.staging[offset] &^= (1 << mask)
+    }
 }
 
 func (mesh *Mesh) UpdateRow(row uint64) Stat {
 	var stat Stat
 	for col := uint64(0); col < mesh.Columns; col++ {
 		count := mesh.Counter(row, col)
-		if mesh.GetValue(row, col) > 0 {
+		if mesh.GetValue(row, col) {
 			if count < 2 || count > 3 {
-				mesh.SetValue(row, col, 0)
+				mesh.SetValue(row, col, false)
 				stat.Changed++
 				stat.Dead++
 			} else {
-				mesh.SetValue(row, col, 1)
+				mesh.SetValue(row, col, true)
 				stat.Alive++
 			}
 		} else {
 			if count == 3 {
-				mesh.SetValue(row, col, 1)
+				mesh.SetValue(row, col, true)
 				stat.Changed++
 				stat.Alive++
 			} else {
-				mesh.SetValue(row, col, 0)
+				mesh.SetValue(row, col, false)
 				stat.Dead++
 			}
 		}
@@ -91,7 +104,9 @@ func (mesh *Mesh) Counter(row uint64, column uint64) int {
 				n_row := int(row) + rmod
 				n_col := int(column) + cmod
 				if n_row > 0 && n_col > 0 && n_row < int(mesh.Rows) && n_col < int(mesh.Columns) {
-					total += int(mesh.GetValue(uint64(n_row), uint64(n_col)))
+					if mesh.GetValue(uint64(n_row), uint64(n_col)) {
+                        total++
+                    }
 				}
 			}
 		}
@@ -100,7 +115,7 @@ func (mesh *Mesh) Counter(row uint64, column uint64) int {
 }
 
 func (mesh *Mesh) Chaos() {
-	for i := uint64(0); i < mesh.Rows*mesh.Columns; i++ {
-		mesh.current[i].value = uint8(rand.Uint64() & 2)
+	for i := uint64(0); int(i) < len(mesh.current); i++ {
+		mesh.current[i] = rand.Uint64()
 	}
 }
