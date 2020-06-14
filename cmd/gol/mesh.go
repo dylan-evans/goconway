@@ -4,6 +4,10 @@ import (
 	"math/rand"
 )
 
+type Cell struct {
+	value uint8
+}
+
 type Mesh struct {
 	Rows, Columns    uint64
 	current, staging []Cell
@@ -12,18 +16,18 @@ type Mesh struct {
 func NewMesh(rows, columns uint64) Mesh {
 	mesh := Mesh{Rows: rows,
 		Columns: columns,
-    }
-    mesh.current = make([]Cell, mesh.Size(), mesh.Size())
+	}
+	mesh.current = make([]Cell, mesh.Size(), mesh.Size())
 	mesh.staging = make([]Cell, mesh.Size(), mesh.Size())
-    return mesh
+	return mesh
 }
 
 func (mesh *Mesh) Size() uint64 {
-    return mesh.Rows * mesh.Columns
+	return mesh.Rows * mesh.Columns
 }
 
 func (mesh *Mesh) getOffset(row, column uint64) uint64 {
-    return row * mesh.Columns + column
+	return row*mesh.Columns + column
 }
 
 func (mesh *Mesh) GetValue(row, column uint64) uint8 {
@@ -44,7 +48,7 @@ func (mesh *Mesh) UpdateRow(row uint64) Stat {
 				stat.Changed++
 				stat.Dead++
 			} else {
-                mesh.SetValue(row, col, 1)
+				mesh.SetValue(row, col, 1)
 				stat.Alive++
 			}
 		} else {
@@ -53,7 +57,7 @@ func (mesh *Mesh) UpdateRow(row uint64) Stat {
 				stat.Changed++
 				stat.Alive++
 			} else {
-                mesh.SetValue(row, col, 0);
+				mesh.SetValue(row, col, 0)
 				stat.Dead++
 			}
 		}
