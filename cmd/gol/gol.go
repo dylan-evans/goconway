@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+    "time"
 )
 
 type Stat struct {
@@ -23,9 +24,21 @@ func main() {
 	fmt.Println("Adding chaos")
 	mesh.Chaos()
 	fmt.Println("Starting", mesh.Rows, "rows", mesh.Columns, "columns")
-	for i := 0; ; i++ {
-		stat := mesh.Update()
+
+    var stat Stat
+    var loop int
+
+    go func() {
+        // The monitor loop
+        delay, _ := time.ParseDuration("1s")
+        for {
+            fmt.Println("loop", loop, "alive", stat.Alive, "dead", stat.Dead, "changed", stat.Changed)
+            time.Sleep(delay)
+        }
+    }()
+
+	for ; ; loop++ {
+		stat = mesh.Update()
 		mesh.Swap()
-		fmt.Println("loop", i, stat)
-	}
+    }
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+    "sync"
 )
 
 const BITS = 64
@@ -115,7 +116,15 @@ func (mesh *Mesh) Counter(row uint64, column uint64) int {
 }
 
 func (mesh *Mesh) Chaos() {
-	for i := uint64(0); int(i) < len(mesh.current); i++ {
-		mesh.current[i] = rand.Uint64()
+    var wg sync.WaitGroup
+	for i := uint64(0); int(i) < len(mesh.current); i += 1000 {
+        wg.Add(1)
+		go func(start uint64) {
+            for j := start; j < start + 1000 && int(j) < len(mesh.current); j++ {
+                mesh.current[j] = rand.Uint64()
+            }
+            wg.Done()
+        }(i)
 	}
+    wg.Wait()
 }
